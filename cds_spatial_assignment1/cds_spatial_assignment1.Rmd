@@ -1,0 +1,88 @@
+---
+title: "cds_spatial_analytics_assignment1"
+author: "Emil Jessen"
+date: "4 feb 2021"
+output: html_document
+---
+1. 
+Answer: Describe a problem or question in your field for which spatial analysis could be applicable.
+```{r}
+# Which parts of Denmark have the most challenged demography? And is the challenged demography clustered, spatially?
+```
+
+2.
+Answer: List 5 data layers that you think are necessary to answer your question/solve your problem. 
+Find on the internet github.and then describe examples of two or three of your listed layers.
+```{r}
+# 5 relevant data layers (could not find the layers, however the information needed is available at dst.dk (Danmarks Statistik)):
+
+# - Map of DK
+# - Income level (municipality level, min-max normalized, heatmap)
+# - Crime rate (municipality level, min-max normalized, heatmap)
+# - Obesity rate (municipality level, min-max normalized, heatmap)
+# - Average score of previous layers (municipality level, heatmap)
+
+# Take the mean of the income level for inhabitants for each municipality. Then do a min/max normalization. Then create a layer with a colour representing the income level (0-1, numeric), and overlay it on the DK map. 
+# Repeat process for other rates/scores, and also create a layer which merely averages the other scores.
+# Now you have a map where you can see which parts of Denmark have the most challenged demography (question), and you can see if they're clustered demographically.
+```
+
+3.
+Code: Your colleague has found some ruins during a hike in the Blue Mountains and recorded the coordinates of structures on her phone(RCFeature.csv). She would like to map her points but has no computer or mapping skills. Can you make a map that she can work with using only a browser? She needs an interactive map that she can download to her computer and use straightaway.
+Create a standalone .html map in Leaflet showing at least basic topography and relief, and load in the table of points. Make sure she can see the FeatureID, FeatureType and Description attributes when she hovers over the point markers. 
+Consider adding elements such as minimap() and measure() for easier map interaction
+Explore differentiating the markers (e.g. by size using Accuracy field)
+Explore the option of clustering markers with addMarkers(clusterOptions = markerClusterOptions()). Do you recommend marker clustering here?
+```{r}
+library(pacman)
+p_load(leaflet, htmltools, htmlwidgets, tidyverse, googlesheets4)
+setwd("C:/Users/Lenovo/Desktop/Diverse dokumenter/Cognitive Science/cultural_data_science/spatial_analytics/cds_spatial_analytics_assignment1")
+
+# Loading his/her points
+rc_feature <- read.csv("RCFeature.csv")
+
+# Creating a map
+rc_map <- leaflet() %>% # Assigning to object
+  setView( lng =150.293129, lat = -33.758719, zoom = 16) %>% # Creating starting viewpoint
+  
+  # Selecting which layers to use
+  addProviderTiles("Esri.WorldTopoMap", group = "Topography") %>% 
+  addProviderTiles("Esri.WorldImagery", group = "Aerial") %>% 
+  addProviderTiles("Esri.WorldStreetMap", group = "Street") %>% 
+  
+  # Have the option of choosing layer up in the corner
+  addLayersControl(baseGroups = c("Topography","Aerial", "Street"),
+  options = layersControlOptions(collapsed = F)) %>%
+  
+  # Adding a minimap in the bottomright
+  addMiniMap(toggleDisplay = TRUE,
+             position = "bottomright") %>%
+    
+  # Adding a measurer for distances in the bottomleft
+  addMeasure(
+    position = "bottomleft",
+    primaryLengthUnit = "meters",
+    primaryAreaUnit = "sqmeters",
+    activeColor = "#3D535D",
+    completedColor = "#7D4479") %>% 
+  htmlwidgets::onRender("
+                        function(el, x) {
+                        var myMap = this;
+                        myMap.on('baselayerchange',
+                        function (e) {
+                        myMap.minimap.changeLayer(L.tileLayer.provider(e.name));
+                        })
+                        }") %>%
+  
+  # Adding the markers from the dataset.
+addControl("", position = "topright") %>% 
+  addMarkers(lng = rc_feature$Longitude,
+             lat = rc_feature$Latitude,
+             popup = rc_feature$Description)
+
+# Opening up the map
+rc_map
+
+# Writing the map as a .html file
+saveWidget(rc_map, "rc_map.html", selfcontained = TRUE)
+```
