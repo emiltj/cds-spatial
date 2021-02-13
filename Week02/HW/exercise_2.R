@@ -36,7 +36,8 @@ library(spDataLarge)
 #### Data sets #### 
 
 # We will use two data sets: `srtm` and `zion`.
-# The first one is an elevation raster object for the Zion National Park area, and the second one is an sf object with polygons representing borders of the Zion National Park.
+# The first one is an elevation raster object for the Zion National Park area, and the second one is an sf object with polygons representing 
+# borders of the Zion National Park.
 
 srtm <- raster(system.file("raster/srtm.tif", package = "spDataLarge"))
 zion <- read_sf(system.file("vector/zion.gpkg", package = "spDataLarge"))
@@ -66,8 +67,19 @@ lc_data_masked <- mask(crop(lc_data, study_area), study_area)
 # Your solution (type answer to the questions as code comments and the code used)
 
 # /Start Code/ #
+zion
+plot(zion)
+# It contains a lot of polygons, vector representation
+# It uses GRS80 as datum
+# 11 attributes
 
-
+srtm
+plot(srtm)
+# it contains elevation curves for zion national park
+# raster
+# WGS84 datum
+# 2 dimensions of shape (x,y) and a color dimension.
+res(srtm)
 
 # /End Code/ #
 
@@ -85,6 +97,17 @@ lc_data_masked <- mask(crop(lc_data, study_area), study_area)
 
 # /Start Code/ #
 
+#1
+common_datum <- crs(zion)
+srtm2 <- srtm
+crs(srtm2) <- common_datum
+plot(srtm2)
 
+#2
+common_datum2 <- crs(srtm)
+zion2 <- zion
+zion2 <- st_transform(zion2, common_datum2)
+plot(zion2)
 
 # /End Code/ #
+

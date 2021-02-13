@@ -37,22 +37,34 @@ When the geographic data you read in with `sf` already has a CRS defined both `s
 * Use the `crs()` function to define/assign a CRS to the `manhattan` object.
 
 ```{r crs, eval=FALSE}
+# Load packages
+library(pacman)
+p_load(sf, rgdal, raster, tidyverse,tmap)
+
 # Determine the CRS for the neighborhoods and trees vector objects
-___(neighborhoods)
-___(trees)
+neighborhoods <- read_sf("./data/neighborhoods.shp")
+trees <- read_sf("./data/trees.shp")
+
+crs(trees)
+crs(neighborhoods)
+# WGS84 for trees, WGS84 for neighborhoods
 
 # Assign the CRS to trees
 crs_1 <- "+proj=longlat +ellps=WGS84 +no_defs"
-___(trees) <- ___
+st_crs(trees) = crs_1
 
 # Determine the CRS for the canopy and manhattan rasters
-___(canopy)
-___(manhattan)
+canopy <- raster("./data/canopy.tif")
+manhattan <- brick("./data/manhattan.tif")
+
+crs(canopy)
+crs(manhattan)
 
 # Assign the CRS to manhattan
 crs_2 <- "+proj=utm +zone=18 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
-___(manhattan) <- ___
+crs(manhattan) <- crs_2 
 
+crs(manhattan)
 ```
 
 Nice! You can determine what the CRS is using `st_crs()` for vectors or `crs()` for rasters. If one doesn't exist, you can also use those functions to define the CRS.
@@ -77,22 +89,27 @@ Note that you will use `method = "ngb"` in your call to `projectRaster()` to pre
 
 ```{r crs-assign, eval=FALSE}
 # Get the CRS from the canopy object
-the_crs <- ___(canopy, asText = TRUE)
+crs(canopy, asText = TRUE)
+crs(manhattan, asText = TRUE)
+# BOTH ARE PROJECTED
+crs(trees)
+crs(neighborhoods)
+# BOTH ARE NOT PROJECTED ****`+proj=longlat` then your CRS is unprojected.****
 
 # Project trees to match the CRS of canopy
-trees_crs <- ___(trees, crs = ___)
+the_crs <- crs(canopy, asText = T)
+trees_crs <- st_transform(trees, crs = the_crs)
 
 # Project neighborhoods to match the CRS of canopy
-neighborhoods_crs <- ___(neighborhoods, ___ = ___)
+neighborhoods_crs <- st_transform(neighborhoods, crs = the_crs)
 
 # Project manhattan to match the CRS of canopy
-manhattan_crs <- ___(manhattan, crs = ___, method = "ngb")
+manhattan_crs <- projectRaster(manhattan, crs = the_crs, method = "ngb")
 
 # Look at the CRS to see if they match
-___(trees_crs)
-___(neighborhoods_crs)
-___(manhattan_crs)
-
+crs(trees_crs)
+crs(neighborhoods_crs)
+crs(manhattan_crs)
 ```
 
 Great work! This may be the least fun part of spatial analysis but knowing how to do it will save you from a lot of frustration later.
@@ -118,23 +135,24 @@ Make sure `sf`, `raster` and `tmap` are loaded in your workspace.
 ```{r plot, eval=FALSE}
 # Plot canopy and neighborhoods (run both lines together)
 # Do you see the neighborhoods?
-___(canopy)
-___(neighborhoods, add = TRUE)
+plot(canopy)
+plot(neighborhoods, add = TRUE)
 
 # See if canopy and neighborhoods share a CRS
-___(neighborhoods)
-___(canopy)
+crs(neighborhoods)
+crs(canopy)
 
 # Save the CRS of the canopy layer
-the_crs <- ___(canopy, asText = ___)
+the_crs <- crs(canopy, asText = T)
+the_crs
 
 # Transform the neighborhoods CRS to match canopy
-neighborhoods_crs <- ___(neighborhoods, crs = ___)
+neighborhoods_crs <- st_transform(neighborhoods, crs = the_crs)
 
 # Re-run plotting code (run both lines together)
 # Do the neighborhoods show up now?
-___(canopy)
-___(neighborhoods_crs, add = TRUE)
+plot(canopy)
+plot(neighborhoods_crs, add = TRUE)
 
 # Simply run the tmap code
 tm_shape(canopy) + 

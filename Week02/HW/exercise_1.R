@@ -73,6 +73,22 @@ tm_shape(nz_elev)  +
 # Your solution
 
 # /Start Code/ #
+tm_shape(nz_elev)  +
+  tm_raster(title = "elev. in meters", 
+            style = "cont",
+            palette = "-RdYlGn") +
+  tm_shape(nz) +
+  tm_borders(col = "black", 
+             lwd = 1) +
+  tm_scale_bar(breaks = c(0, 50, 100, 200, 300),
+               text.size = 1) +
+  tm_compass(position = c("right", "top"),
+             type = "rose", 
+             size = 2) +
+  tm_credits(text = "E. Jessen, 13-02-2021") +
+  tm_layout(main.title = "New Zealand",
+            bg.color = "turquoise",
+            inner.margins = c(0, 0, 0, 0))
 
 
 # /End Code/ #
@@ -88,6 +104,10 @@ zion = read_sf(system.file("vector/zion.gpkg", package = "spDataLarge"))
 # Your solution
 
 # /Start Code/ #
+srtm
+plot(srtm)
 
+zion
+plot(zion)
 
 # /End Code/ #

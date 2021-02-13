@@ -1,6 +1,5 @@
 ###   GETTING STARTED WITH LEAFLET
 
-
 ## Choose favorite backgrounds in:
 # https://leaflet-extras.github.io/leaflet-providers/preview/
 ## beware that some need extra options specified
@@ -10,19 +9,17 @@
 # install.packages("htmltools")
 
 # Example with Markers
-library(leaflet)
-library(htmltools)
-library(htmlwidgets)
+library(pacman)
+p_load(leaflet, htmltools, htmlwidgets, tidyverse, googlesheets4)
 
 popup = c("Robin", "Jakub", "Jannes")
 
 leaflet() %>%
   addProviderTiles("Esri.WorldPhysical") %>% 
-  addProviderTiles("Esri.WorldImagery") %>% 
+ #addProviderTiles("Esri.WorldImagery") %>% 
   addAwesomeMarkers(lng = c(-3, 23, 11),
                     lat = c(52, 53, 49), 
                     popup = popup)
-
 
 ## Sydney with setView
 leaflet() %>%
@@ -31,10 +28,9 @@ leaflet() %>%
                    options = providerTileOptions(opacity=0.5)) %>% 
   setView(lng = 151.005006, lat = -33.9767231, zoom = 10)
 
-
 # Europe with Layers
 leaflet() %>% 
-  addTiles() %>% 
+  #addTiles() %>% 
   setView( lng = 2.34, lat = 48.85, zoom = 5 ) %>% 
   addProviderTiles("Esri.WorldPhysical", group = "Physical") %>% 
   addProviderTiles("Esri.WorldImagery", group = "Aerial") %>% 
@@ -61,7 +57,6 @@ leaflet() %>%
 l_aus <- leaflet() %>%   # assign the base location to an object
   setView(151.2339084, -33.85089, zoom = 13)
 
-
 esri <- grep("^Esri", providers, value = TRUE)
 
 for (provider in esri) {
@@ -70,7 +65,7 @@ for (provider in esri) {
 
 AUSmap <- l_aus %>%
   addLayersControl(baseGroups = names(esri),
-                   options = layersControlOptions(collapsed = FALSE)) %>%
+                   options = layersControlOptions(collapsed = T)) %>%
   addMiniMap(tiles = esri[[1]], toggleDisplay = TRUE,
              position = "bottomright") %>%
   addMeasure(
@@ -86,7 +81,7 @@ AUSmap <- l_aus %>%
                         function (e) {
                         myMap.minimap.changeLayer(L.tileLayer.provider(e.name));
                         })
-                        }") %>%
+                        }") %>% 
 addControl("", position = "topright")
 
 AUSmap
@@ -95,29 +90,21 @@ AUSmap
 
 # Save map as a html document (optional, replacement of pushing the export button)
 # only works in root
-library(htmlwidgets)
 saveWidget(AUSmap, "AUSmap.html", selfcontained = TRUE)
 
-# for saving outside root https://stackoverflow.com/questions/41399795/savewidget-from-htmlwidget-in-r-cannot-save-html-file-in-another-folder
+
 ################################## ADD DATA TO LEAFLET
-# Libraries
-library(tidyverse)
-library(googlesheets4)
-library(leaflet)
-
 places <- read_sheet("https://docs.google.com/spreadsheets/d/1PlxsPElZML8LZKyXbqdAYeQCDIvDps2McZx1cTVWSzI/edit#gid=0",col_types = "cccnncn")
-glimpse(places)
-places <- places %>% filter(!is.na(Longitude))
+head(places)
 
-gs4_auth_configure()
-gs4_has_token()
-
-
-MapDK %>% 
-  addCircleMarkers(lng = places$Longitude, 
+leaflet() %>%
+  addTiles() %>%
+  addProviderTiles("Esri.WorldImagery", 
+                   options = providerTileOptions(opacity=0.5)) %>% 
+  addMarkers(lng = places$Longitude,
              lat = places$Latitude,
-             popup = places$Description,
-             clusterOptions = markerClusterOptions())
+             popup = places$Description)
+
 
 #########################################################
 #
@@ -126,3 +113,46 @@ MapDK %>%
 # The googlesheet is at https://docs.google.com/spreadsheets/d/1PlxsPElZML8LZKyXbqdAYeQCDIvDps2McZx1cTVWSzI/edit#gid=0
 
 #########################################################
+
+# Task 1:
+# Bring in a choice of esri background layers  
+
+l_dk <- leaflet() %>%   # assign the base location to an object
+  setView(9.5018, 56.2639, zoom = 6)
+
+esri <- grep("^Esri", providers, value = TRUE)
+
+for (provider in esri) {
+  l_dk <- l_dk %>% addProviderTiles(provider, group = provider)
+}
+
+dkmap <- l_dk %>%
+  addLayersControl(baseGroups = names(esri),
+                   options = layersControlOptions(collapsed = T)) %>%
+  addMiniMap(tiles = esri[[1]], toggleDisplay = TRUE,
+             position = "bottomright") %>%
+  addMeasure(
+    position = "bottomleft",
+    primaryLengthUnit = "meters",
+    primaryAreaUnit = "sqmeters",
+    activeColor = "#3D535D",
+    completedColor = "#7D4479") %>% 
+  htmlwidgets::onRender("
+                        function(el, x) {
+                        var myMap = this;
+                        myMap.on('baselayerchange',
+                        function (e) {
+                        myMap.minimap.changeLayer(L.tileLayer.provider(e.name));
+                        })
+                        }") %>% 
+addControl("", position = "topright") %>% 
+  addMarkers(lng = places$Longitude,
+             lat = places$Latitude,
+             popup = places$Description)
+
+dkmap
+
+
+saveWidget(dkmap, "dkmap.html", selfcontained = TRUE)
+
+

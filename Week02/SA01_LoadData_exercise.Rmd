@@ -31,26 +31,55 @@ In this exercise you will read in three shapefiles (one point file and two polyg
 
 ```{r load, eval=FALSE, echo=TRUE}
 # Load the sf package
-___(___)
+library(pacman)
+p_load(sf, raster, rgdal)
 
 # Read in the trees shapefile
-trees <- ___("data/trees.shp")
+trees <- read_sf("data/trees.shp")
 
 # Read in the neighborhood shapefile
-neighborhoods <- ___(___)
+neighborhoods <- read_sf("data/neighborhoods.shp")
 
 # Read in the parks shapefile
-parks <- ___(___)
+parks <- read_sf("data/parks.shp")
 
 # View the first few trees
-___(___)
+head(trees)
+
 ```
 
 ## Questions: 
 
 1. How many features do `trees` contain and what kind of geometry are they?
+```{r}
+head(trees)
+ncol(trees)
+# 8
+
+trees$geometry[1]
+# Points. Written in degrees decimal
+
+head(trees)
+
+```
+
 2. How many features are there inside `neighborhoods` and what is their geometry?
+```{r}
+head(neighborhoods)
+ncol(neighborhoods)
+# 6
+
+neighborhoods$geometry
+# Multipolygons. Written in degrees decimal
+```
+
 3. What is the CRS value in these objects?
+```{r}
+st_crs(trees)
+st_crs(neighborhoods)
+# WGS 84
+```
+
 
 Well done, you can see how easy it can be to read in shapefiles and you got your first taste of what an sf object looks like.
 
@@ -73,25 +102,41 @@ Multi-band rasters will have more than one layer. An example is a color aerial p
 
 ```{r loadraster, eval=FALSE, echo=TRUE}
 # Load the raster package
-___(___)
+p_load(raster)
 
 # Read in the tree canopy single-band raster
-canopy <- ___(___)
+canopy <- raster("data/canopy.tif")
 
 # Read in the manhattan Landsat image multi-band raster
-manhattan <- ___(___)
+manhattan <- brick("data/manhattan.tif")
 
 # Get the class for the new objects
-class(___)
-class(___)
+class(canopy)
+class(manhattan)
 
 # Identify how many layers each object has
-nlayers(___)
-nlayers(___)
+nlayers(canopy)
+nlayers(manhattan)
+
 ```
 
 Questions:
 
 1. What are the dimensions (number of columns and rows) of the `canopy` raster?
+```{r}
+canopy
+# 230, 253, 58190  (nrow, ncol, ncell)
+
+```
+
 2. What is the resolution of `manhattan`?
+```{r}
+manhattan
+# resolution : 29.98979, 30.00062  (x, y)
+
+```
+
+
+
+
 
