@@ -2,9 +2,7 @@
 title: "Ancient cities and inscriptions"
 author: "Adela Sobotkova"
 date: "13/01/2021 updated `r format(Sys.time(), '%B %d, %Y')`" 
-output:
-  rmdformats::readthedown:
-  highlight: kate
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -60,7 +58,7 @@ crs(cities_sf3035)
 
 ### Question 1: 
 *What are the measurement units of the `cities_sf3035` object?*
-```{r}
+```{reval=FALSE}
 head(cities_sf3035)
 crs(cities_sf3035)
 # metres, as can be read. but also projected maps are not in degrees, minutes or seconds.
@@ -163,7 +161,7 @@ Oooof. That was some serious wrangling!
 
 ### Question 2: 
 *Which part of the world are the inscriptions from?*
-```{r}
+```{r, eval=FALSE}
 leaflet() %>% addTiles() %>% addMarkers(lng=i_sm$longitude,lat=i_sm$latitude)
 i_sm$country
 
@@ -237,13 +235,15 @@ nrow(insc_rural)
 
 ### Question 3: 
 *What is the ratio of urban to rural inscriptions?*
-```{r}
+```{r, eval=FALSE}
 (nrow(insc_urban) + nrow(insc_rural)) / nrow(insc_rural)
 # a ratio of 7.52 (urban inscriptions, per rural inscription)
 ```
 
  
-#### STOPPED HERE 
+# I 
+# STOPPED 
+# HERE 
  
  
  
