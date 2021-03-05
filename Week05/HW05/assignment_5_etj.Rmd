@@ -1,0 +1,190 @@
+---
+title: "assignment5"
+author: "Emil Jessen"
+date: "4 mar 2021"
+output: html_document
+---
+
+# Task 1: Burial mound health
+
+A number of factors can negatively affect cultural heritage, from natural post-depositional processes, such as chemical and mechanical weathering, to animal-activity and human-inflicted damage, which can be either direct (excavation, looting) or indirect (development, agricultural activities, transport). In order to understand the anthropic impacts on cultural heritage, archaeologists routinely assess the condition of different types of cultural remains. In the burial mounds dataset, the Condition column contains a professional judgment of monument health recorded on a Likert-scale from 1 to 5, where 1 means the feature is in pristine state, while 5 means it is extinct or nearly so. The 'Robbed' column, specifies via a binary value of 1/0 (corresponding to Yes/No), whether looting was detected on site. The LandUse column contains the surrounding land use, which can also relate to the condition.
+
+Design a study to evaluate direct or indirect impacts on burial mounds. You can use the provided datasets to extract a number of possible variables for this purpose:
+
+- location-related variables such as elevation, aspect, slope (are mounds on steep slopes or in lower elevations disproportionately more vulnerable? )
+- mound size (are larger mounds disproportionately affected by looters?)
+- mound proximity to roads, rivers, nearest settlement boundary or center, regional capital boundary or center (do looters rob mounds that are closer to the settlements? are mounds near large urban centers disproportionally damaged/looted? are mounds in the vicinity of the Koprinka reservoir - the large dam in the middle of the valley, see kaz_lakes.shp - more damaged?)
+- landuse around the mound (are mounds in agricultural fields more prone to damage than mounds in the forests?)
+
+# Loading packages
+```{r}
+library(pacman)
+p_load(tidyverse, raster, sf, rgl, rgdal, rasterVis, lattice, rglwidget, RColorBrewer)
+```
+
+# Importing the data
+```{r}
+KAZ_mdata <- read_csv("data/KAZ_mdata.csv") # Info on burial mounds
+
+mound <- st_read("data/KAZ_mounds.shp")  # Mounds spatial info
+
+aster <- raster("data/Aster.tif") # The raster on elevation in the area
+```
+
+# Prparing data for plotting
+```{r}
+head(aster) # The raster contains a lot of -9999 (which ought to be NA)
+
+aster <- reclassify(aster, rcl = c(-10000, -1, NA)) # Reclassifying all values within -10000 and -1 to be NA
+
+# Check if crs is the same in the two datasets
+st_crs(mound) == st_crs(aster)
+
+# Checking the units
+#st_crs(mound) # Metres
+
+# Both the mound object and the info on mounds df contains an ID code for the mounds (MoundID and TRAP_Code)
+# Here we join them together
+moundData <- left_join(KAZ_mdata,
+                       mound,
+                       by = c("MoundID" = "TRAP_Code"))
+
+
+class(moundData) # the moundData is now a df
+
+# Transform it to sf object:
+moundData <- st_as_sf(moundData)
+
+# Plotting the moundData to see whether it works
+plot(st_geometry(moundData))
+
+# Change into a spatial object, so that it can be merged with the other raster object
+moundData_sp <- as(moundData, "Spatial")
+
+# "Crop" the aster so that the raster only contains the area where there are mound objects
+aster_crop <- crop(aster, moundData_sp)
+
+# Seeing whether it worked
+plot(aster_crop)
+plot(aster)
+
+# from the raster layer with height, we can also get the slope (change in elevation at each pixel - the derivative of elevatation)
+aster_slope <- terrain(aster_crop, opt = 'slope', unit = 'degrees') 
+
+# Plot the slope raster
+plot(aster_slope)
+
+# changing the robbed columnn into factor
+moundData_sp$Robbed <- factor(moundData_sp$Robbed) 
+```
+
+# Plotting
+```{r}
+# Plotting - showing the slope and the location of the mounds, and whether or not they have been robbed.
+# The grey on the right shows the slope for the respective pixel "line" (all slopes combined at y = 4725000 at the very top)
+rasterVis::levelplot(aster_slope,
+  margin = list(x = F, 
+                y = T),
+  col.regions = terrain.colors(16),
+  xlab = list (label = "", 
+               vjust = -.25),
+  sub = list(
+    label = "Slope in degrees",
+    font = 1,
+    cex = .9,
+    hjust = 1.5),
+  
+  key = list( 
+    points = list(
+      pch = 1,
+      col = c("blue","red")), 
+    text = list(
+      c("Not robbed","Robbed")))
+  ) + 
+  
+  spplot(moundData_sp, # add a layer of points
+         zcol = "Robbed", 
+         cex = .6,
+         pch = 1,
+         col.regions = c("blue","red")
+         )
+
+# It seems that the mounds have been located at areas of little slope. Whether the mounds have been robbed or not doesn't (at first glance) seem to be explained by slope. Here other factors than slope must play in
+rasterVis::levelplot(aster_slope,
+  margin = list(x = F, 
+                y = T),
+  col.regions = terrain.colors(16),
+  xlab = list (label = "", 
+               vjust = -.25),
+  sub = list(
+    label = "Slope in degrees",
+    font = 1,
+    cex = .9,
+    hjust = 1.5),
+  
+  key = list(
+    points = list(
+      pch = 1,
+      col = c("white","red")), 
+    text = list(
+      c("White = good condition","Red = bad condition")))
+  ) + 
+  
+  spplot(moundData_sp, # add a layer of points
+         zcol = "Condition", 
+         cex = .6,
+         pch = 1,
+         col.regions = brewer.pal(5,"Reds")
+         )
+
+# Getting an overview of the general condition of the mounds
+ggplot(moundData, aes(x = Condition)) + 
+  geom_histogram(color = "black", fill = "brown", bins = 5)
+
+
+
+```
+
+# Getting elevation value at the location of each of the mounds
+```{r}
+# Extract the aster elevation values at the mounds
+mounds_values <- raster::extract(aster_crop, moundData_sp, fun = mean)
+# elevation values at the mounds extracted from the aster raster stored in a list
+
+# Append the list of elevation values to the dataframe
+moundData$elevation <- mounds_values
+mounds_slope <- raster::extract(aster_slope, moundData_sp, buf = 20, fun = mean)
+# elevation values at the mounds extracted from the aster raster stored in a list
+
+# Append the list of elevation values to the dataframe
+moundData$slope <- mounds_slope
+
+# remove NA's
+moundData <- moundData %>% drop_na()
+
+moundData[1:4,] # Now we have two extra columns with elevation and slope
+
+```
+
+
+```{r}
+# Number of mounds at different elevations (robbed an non-robbed)
+ggplot(moundData, aes(x = elevation)) +
+  geom_histogram(col="black", 
+                 fill="brown", 
+                 alpha = .8,
+                 bins = 20) + 
+  labs(title="N(mounds) at different elevations - 1 means robbed", x="Elevation", y="Frequency") +
+  facet_wrap(.~ Robbed)
+
+# Number of mounds at different slopes (robbed an non-robbed)
+ggplot(moundData, aes(x = slope)) +
+  geom_histogram(col="black", 
+                 fill="brown", 
+                 alpha = .8,
+                 bins = 20) + 
+  labs(title="N(mounds) at different elevations - 1 means robbed", x="Slope", y="Frequency") +
+  facet_wrap(.~ Robbed)
+
+# Doesn't (at first glance) seem to be a connection between whether mounds are robbed or not and the elevation/slope at their locations.
+```
